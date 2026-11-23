@@ -1,0 +1,85 @@
+name: Build dan rilis APK
+
+# Setiap push ke main/master: build APK release bertanda tangan, lalu terbitkan sebagai rilis GitHub.
+# Aplikasi membaca rilis terbaru ini untuk fitur update di dalam aplikasi.
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+    steps:
+      - name: Periksa kunci tanda tangan
+        run: |
+          missing=""
+          for v in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then missing="$missing $v"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Secret belum diisi:$missing. Isi di Settings > Secrets and variables > Actions, lalu jalankan ulang workflow ini."
+            exit 1
+          fi
+
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Pasang JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Pasang Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Siapkan kunci tanda tangan
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build APK release
+        run: gradle assembleRelease --stacktrace
+
+      - name: Periksa tanda tangan
+        id: sign
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)
+          "$APKSIGNER" verify --print-certs "$APK" | tee sign.txt
+          grep -q "certificate SHA-256 digest" sign.txt
+          VER=$(tr -d '[:space:]' < version.txt)
+          cp "$APK" "MakalahKilat-v${VER}.apk"
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: Tulis catatan rilis
+        env:
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if [ -n "$MSG" ]; then printf '%s\n' "$MSG" > notes.md; else echo "Rilis versi ${{ steps.sign.outputs.ver }}" > notes.md; fi
+
+      - name: Terbitkan rilis
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.sign.outputs.ver }}
+          target_commitish: ${{ github.sha }}
+          name: Makalah Kilat v${{ steps.sign.outputs.ver }}
+          body_path: notes.md
+          files: MakalahKilat-v${{ steps.sign.outputs.ver }}.apk
+          make_latest: true

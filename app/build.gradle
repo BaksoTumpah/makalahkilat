@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Versi dibaca dari file version.txt di akar proyek (format X.Y atau X.Y.Z).
+// versionCode = X*10000 + Y*100 + Z, jadi naik setiap versi di version.txt naik.
+def appVersion = file("../version.txt").text.trim()
+def appCode = appVersion.split("\\.").with { (it[0] as int) * 10000 + (it.length > 1 ? it[1] as int : 0) * 100 + (it.length > 2 ? it[2] as int : 0) }
+
+// Kunci tanda tangan rilis dari environment (diisi workflow dari GitHub secrets).
+def ksFile = System.getenv("KEYSTORE_FILE")
+
+android {
+    namespace 'com.makalahkilat.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.makalahkilat.app'
+        minSdk 24
+        targetSdk 34
+        versionCode appCode
+        versionName appVersion
+    }
+
+    signingConfigs {
+        release {
+            if (ksFile) {
+                storeFile file(ksFile)
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ksFile) signingConfig signingConfigs.release
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}

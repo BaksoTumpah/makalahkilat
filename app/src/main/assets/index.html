@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Makalah Kilat</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="bar gut">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 100 100" aria-hidden="true"><path d="M25 27Q25 14 38 14H56L76 34V73Q76 86 63 86H38Q25 86 25 73Z" fill="var(--teal)"/><path d="M56 14V27Q56 34 63 34H76Z" fill="#fff" opacity=".28"/><path d="M57 27L39 54H50L44 76L63 47H52Z" fill="var(--mark)"/></svg>
+      <b>Makalah Kilat</b>
+    </div>
+    <button class="chip" id="chip" type="button"><i></i><span id="chipText">Mode contoh</span></button>
+  </header>
+  <main class="gut" id="view"></main>
+  <div class="actions gut" id="actions" hidden></div>
+  <nav aria-label="Menu utama">
+    <button type="button" data-tab="buat"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span>Buat</button>
+    <button type="button" data-tab="riwayat"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span>Riwayat</button>
+    <button type="button" data-tab="atur"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></span>Pengaturan</button>
+  </nav>
+  <div id="upd" class="modal" hidden></div>
+  <div class="toast gut" id="toast" role="status" hidden></div>
+</div>
+<script src="docx.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
