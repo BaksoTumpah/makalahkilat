@@ -71,8 +71,13 @@ jobs:
       - name: Tulis catatan rilis
         env:
           MSG: ${{ github.event.head_commit.message }}
+          VER: ${{ steps.sign.outputs.ver }}
         run: |
-          if [ -n "$MSG" ]; then printf '%s\n' "$MSG" > notes.md; else echo "Rilis versi ${{ steps.sign.outputs.ver }}" > notes.md; fi
+          # Catatan perubahan: bagian "## <versi>" dari CHANGELOG.md; bila tidak ada, pakai pesan commit.
+          awk -v v="$VER" '/^## /{f=($2==v);next} f' CHANGELOG.md 2>/dev/null | sed '/./,$!d' > notes.md || true
+          if [ ! -s notes.md ]; then
+            if [ -n "$MSG" ]; then printf '%s\n' "$MSG" > notes.md; else echo "Rilis versi $VER" > notes.md; fi
+          fi
 
       - name: Terbitkan rilis
         uses: softprops/action-gh-release@v2
@@ -83,3 +88,17 @@ jobs:
           body_path: notes.md
           files: MakalahKilat-v${{ steps.sign.outputs.ver }}.apk
           make_latest: true
+
+      # Kirim versi, ukuran, catatan perubahan, dan link unduhan ke situs ApkSwift.
+      # Perlu secret APKSWIFT_USER dan APKSWIFT_PASS (akun developer ApkSwift). Bila kosong, langkah ini dilewati.
+      - name: Kirim versi ke ApkSwift
+        continue-on-error: true
+        env:
+          APKSWIFT_USER: ${{ secrets.APKSWIFT_USER }}
+          APKSWIFT_PASS: ${{ secrets.APKSWIFT_PASS }}
+          VERSION: ${{ steps.sign.outputs.ver }}
+        run: |
+          export APK_FILE="MakalahKilat-v${VERSION}.apk"
+          export NOTES="$(cat notes.md)"
+          export APK_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${APK_FILE}"
+          node .github/scripts/apkswift-publish.mjs
